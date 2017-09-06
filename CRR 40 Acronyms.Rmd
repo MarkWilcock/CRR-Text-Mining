@@ -1,0 +1,122 @@
+## CRR 40 Acronyms
+
+## Bank Buzzword Bingo 
+
+Our test for acronyms is those words that have two or more consecutive letters in capitals.
+
+```{r}
+case_sense_words <-
+  parsed_pages  %>% 
+  unnest_tokens(word, page, to_lower = FALSE) %>% 
+  mutate(word = str_extract(word, "[A-Za-z']+")) %>%  
+  filter(!is.na(word)) %>% 
+  anti_join(all_stop_words, by = "word")
+
+
+acronyms <- case_sense_words %>% 
+  filter(str_detect(word, "[A-Z][A-Z]")) %>% 
+  count(word, sort = TRUE) %>% 
+  mutate(ranking = min_rank(desc(n))) %>%
+  ungroup() 
+
+```
+
+Let's make a word cloud  of these.
+```{r}
+acronyms %>%
+  filter(!word %in% c("USD", "CHF", "AG")) %>% 
+  with(wordcloud(word, n, max.words = 400))
+```
+
+Plot the top top acronyms in each year.
+
+```{r fig.width = 10, fig.height = 12}
+case_sense_words %>% 
+  filter(str_detect(word, "[A-Z][A-Z]")) %>% 
+  count(year, word, sort = TRUE) %>%  # counting by year and word this time
+  # ungroup() %>% 
+  group_by(year) %>% 
+  arrange(desc(n)) %>%
+  top_n(20, n)  %>% 
+  ungroup()  %>% 
+  mutate(word_year = fct_reorder(paste(word, year, sep = "__"), n)) %>% 
+  ggplot(aes(x = word_year, 
+             y = n, 
+             fill = year)) + 
+  geom_col() +
+  facet_wrap(~year, ncol = 4, scales = "free") +
+  ggtitle("Most Popular Acronyms Over The Years", 
+          "How many do you know?") +
+  scale_y_continuous("Number") +
+  scale_x_discrete("Year of report", 
+                   labels = function(x) str_replace(x, "__.*", "")) +
+  #scale_fill_tableau(palette = "tableau10medium") +
+  scale_fill_manual(values = brewer.pal(7, "Dark2")) +
+  coord_flip() +
+  theme_light() +
+  theme(legend.position = "bottom")  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+```
+
+### Forensic Analysis
+Let's find some of the defnitions of these acronyms
+
+There seems to be a house style in that the first time an acronym appears, it is in brackets with the definition preceding it
+e.g. the New York Stock Exchange (NYSE) 
+
+```{r out.width=300}
+
+# this pattern captures acronyms and the preceding 5 words
+p_acronym_and_definition <- 
+  capture(one_or_more(WRD)) %R% 
+  SPACE %R%
+  capture(one_or_more(WRD)) %R% 
+  SPACE %R%
+  capture(one_or_more(WRD)) %R% 
+  SPACE %R%
+  capture(one_or_more(WRD)) %R% 
+  SPACE %R%
+  capture(one_or_more(WRD)) %R% 
+  SPACE %R%  
+  OPEN_PAREN %R% capture(one_or_more(UPPER)) %R% CLOSE_PAREN
+
+# the list_result column with have a contain a matrix of n rows by 5 columns
+# n depends on the mumber of matches
+# unnest will not accept a list of matrices but will accepts a list of data frames
+# so to unnest so that each match is on own row, we must convert the matrix into a data_frame
+
+convert_to_df7 <- function (m) {
+  data_frame(text = m[,1], 
+             word1 = m[,2],
+             word2 = m[,3],
+             word3 = m[,4],
+             word4 = m[,5],
+             word5 = m[,6],
+             acronym = m[,7])
+}
+
+
+# boring_terms <- "[The |the |of |on |in |and |for ]"
+boring_terms <- or("The ","the ","of ","on ","in ","and ","for ", "a ")
+empty_term <-  ""
+
+parsed_pages_unbored <- 
+  parsed_pages %>% 
+ mutate(page2 = str_replace_all(page, boring_terms, empty_term))
+
+parsed_pages_with_nests <-
+  parsed_pages_unbored %>% 
+  mutate(list_result = str_match_all(page2, p_acronym_and_definition)) %>% 
+  mutate(tibble_result = map(list_result, convert_to_df7))
+
+# select(parsed_pages, pagenumber, list_result, tibble_result)
+
+acronym_definitions <- 
+  parsed_pages_with_nests %>% 
+  unnest(tibble_result)
+
+acronym_definitions %>% 
+  select(year, pagenumber, acronym, word1, word2, word3, word4, word5) %>% 
+  knitr::kable()
+```

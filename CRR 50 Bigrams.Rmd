@@ -1,0 +1,127 @@
+## CRR 50 Bigrams
+
+# Bigram Analysis
+
+
+Rather than the words, let get the bigrams (consecutive two words) from the parsed pages.
+
+```{r}
+parsed_bigrams <-
+  parsed_pages  %>% 
+  unnest_tokens(bigram, page, to_lower = TRUE, token = "ngrams", n = 2)  
+  #mutate(bigram = str_extract(bigram, "[A-Za-z ']+"))  
+  # clean up of any PDF chars not removed by previous operations
+  #filter(!is.na(word)) %>% # previous operation may have created NAs if all chars were not letters
+  #anti_join(all_stop_words, by = "word")
+
+parsed_bigrams
+
+```
+
+```{r}
+parsed_bigrams %>% count(bigram, sort = TRUE)
+```
+
+Let's get rid of bigrams where either words is a stop word
+
+```{r}
+useful_bigrams <- 
+  parsed_bigrams %>% 
+  separate(bigram, c("word1", "word2"), sep = " ", remove = FALSE) %>% 
+  #mutate(word1 = trimws(word1), word2 = trimws(word2)) %>% 
+  filter(!(word1 %in% all_stop_words$word)) %>% 
+  filter(!(word2 %in% all_stop_words$word)) %>% 
+  filter(!str_detect(word1, "[0-9]")) %>% 
+  filter(!str_detect(word2, "[0-9]")) %>% 
+  filter(!str_detect(word1, "\\.")) %>% 
+  filter(!str_detect(word2, "\\.")) %>% 
+  unite(bigram2, word1, word2, sep = "\n", remove = FALSE) # so we can show more easily as chart label
+
+  #filter(!is.na(word1) & length(word1) > 0)
+#  unite(bigram, word1, word2, sep = " ")
+  
+useful_bigrams %>% 
+  count(word1, word2, sort = TRUE)
+
+```
+We may want to get rid of "words" with am embbedded . like suisse.com later.
+
+Most popular bigrams each year
+
+```{r fig.width = 12, fig.height = 12}
+#test - this sorts all columns in correct order
+useful_bigrams %>%
+  count(year, bigram) %>%
+  mutate(bigram_year = fct_reorder(paste(bigram, year, sep = "__"), n)) %>% 
+  ungroup() %>% 
+  group_by(year) %>% 
+  arrange(desc(n)) %>%
+  top_n(20, n) %>% 
+  ggplot(aes(x = bigram_year, y = n, fill = year)) +
+  geom_col() +
+  facet_wrap(~year, ncol = 4, scales = "free") +
+  coord_flip() +
+  ggtitle("Most Popular Bigrams By Year", "") +
+  scale_y_continuous("Frequency") +
+  scale_x_discrete("", labels = function(x) str_replace(x, "__.*", "")) +
+  scale_fill_manual(values = brewer.pal(7, "Dark2")) +
+  theme_light() +
+  theme(legend.position = "none")  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+```
+
+
+### TF_IDF on Bigrams
+
+Let's do a TF-IDF analysis on the bigrams
+
+
+```{r fig.width = 12, fig.height = 12}
+useful_bigrams %>%
+  count(year, bigram) %>%
+  bind_tf_idf(bigram, year, n) %>% 
+  mutate(bigram_year = fct_reorder(paste(bigram, year, sep = "__"), tf_idf)) %>% 
+  ungroup() %>% 
+  group_by(year) %>% 
+  arrange(desc(tf_idf)) %>%
+  top_n(20) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = bigram_year, y = tf_idf, fill = year)) +
+  geom_col() +
+  facet_wrap(~year, ncol = 4, scales = "free") +
+  ggtitle("TF-IDF Bigrams Analysis", 
+          "") +
+  scale_y_continuous("TF-IDF") +
+  scale_x_discrete("Year of report", labels = function(x) str_replace(x, "__.*", "")) +
+  scale_fill_manual(values = brewer.pal(7, "Dark2")) +
+  coord_flip() +
+  theme_light() +
+  theme(legend.position = "bottom")  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+```
+
+```{r}
+
+useful_bigram_graph <-  
+  useful_bigrams %>% 
+  count(word1, word2) %>%
+  filter(n > 20) %>% 
+  graph_from_data_frame()
+
+useful_bigram_graph
+```
+
+
+```{r fig.width = 18, fig.height = 12}
+a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
+
+ggraph(useful_bigram_graph, layout = "fr") +
+  geom_edge_link(arrow = a) +
+  geom_node_point(color = "pink", size = 4) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1, size = 5) +
+  theme_void()
+```
+
+

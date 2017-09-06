@@ -1,0 +1,67 @@
+## CRR 70 Pyramid Charts
+
+# Polarised tag plots (pyramid plots).
+
+```{r}
+# Prepare the data for the pyramid plot
+# - calculate the rankings by difference, abs difference of 2010 and 2016 counts
+df2 <- 
+  data_frame(
+    terms = rownames(m2),
+    `2010` = m2[, "2010"],
+    `2016` = m2[, "2016"]
+  ) %>% 
+  filter(!is.na(`2010`) & !is.na(`2016`)) %>% 
+  mutate(
+      diff = `2016` - `2010`,
+      abs_diff = abs(diff),
+      total = `2016` + `2010`,
+      rank_diff_asc = min_rank(diff),
+      rank_diff_desc = min_rank(-diff),
+      rank_abs_diff = min_rank(-abs_diff),
+      rank_total = min_rank(-total)
+  )
+
+# top 20 terms more popular in 2016 than in 2010
+df2_top_by_diff_desc <- 
+  df2 %>% 
+  filter(rank_diff_desc <= 20) %>% 
+  arrange(rank_diff_desc)
+
+# top 20 terms more popular in 2010 than in 2016
+df2_top_by_diff_asc <- 
+  df2 %>% 
+  filter(rank_diff_asc <= 20) %>% 
+  arrange(rank_diff_asc)
+
+```
+
+Show top terms more popular in 2016.
+
+```{r fig.width = 10, fig.height = 8, warning=FALSE}
+pyramid.plot(
+  lx = df2_top_by_diff_desc$`2010`,
+  rx = df2_top_by_diff_desc$`2016`,
+  labels = df2_top_by_diff_desc$terms,
+  main = "Top Terms more popular in 2016 than 2010",
+  top.labels = c("2010","Terms", "2016"),
+  lxcol = "blue", 
+  rxcol = "orange",
+  gap = 20)
+
+```
+
+Show top terms more popular in 2010.
+
+```{r fig.width = 10, fig.height = 8, warning=FALSE}
+pyramid.plot(
+  lx = df2_top_by_diff_asc$`2010`,
+  rx = df2_top_by_diff_asc$`2016`,
+  labels = df2_top_by_diff_asc$terms,
+  main = "Top Terms more popular in 2010 than 2016",
+  top.labels = c("2010","Terms", "2016"),
+  lxcol = "blue", 
+  rxcol = "orange",
+  gap = 20)
+```
+

@@ -1,0 +1,103 @@
+## CRR 20 Frequency Analysis
+
+## Basic Frequency Analysis
+
+The analysis above was a bit dodgy since it dd not take into account the (slightly) different lengths of the documents.
+Calculate the _proportions_ of each word 
+
+
+```{r}
+proportions_long <- 
+  useful_words %>%
+  count(year, word) %>%
+  mutate(proportion = n / sum(n))  %>% 
+  ungroup() %>% 
+  select (-n)
+```
+
+Prepare data into word, year-x, year-y proprotion-x, proprotion-y
+most suitable format for Tableau "facet - grid" style map
+
+```{r}
+
+proportions_cross <-
+  inner_join(x = proportions_long, y = proportions_long, by = "word") %>% 
+  select(word, year.x, year.y, proportion.x, proportion.y) %>% 
+  filter (year.x != year.y) %>% 
+  left_join(hot_words, by = "word")
+
+#write_csv(proportions_cross, path = "CSVs/proportions_cross.csv")
+proportions_cross
+```
+
+
+```{r}
+proportions <- 
+ proportions_long %>%
+  spread(year, proportion) %>%
+  left_join(hot_words, by = "word") %>% 
+  mutate(category = ifelse(is.na(category), 'none', category))
+
+proportions
+```
+
+
+```{r}
+
+# the proportion_comparison16 dataset  makes it possible to compare  the 2016 proportions 
+# against the  earlier years. 
+proportion_comparison16  <-
+  proportions %>% gather(year, proportion, `2010`:`2015`)
+
+proportion_comparison16
+```
+
+Plot 2016 frequencies against the previous years.
+
+```{r}
+ggplot(proportion_comparison16, aes(x = proportion, y = `2016`, color = abs(`2016` - proportion))) +
+  geom_abline(color = "gray40", lty = 2) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+  geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+  scale_x_log10(labels = percent) +
+  scale_y_log10(labels = percent) +
+  scale_color_gradient(limits = c(0,0.001), low = "darkslategray4", high = "gray75") +
+  facet_wrap(~year, ncol = 3) +
+  labs(y = "2016", x = NULL) +
+  theme_light() +
+  theme(legend.position = "none") +
+  ggtitle(label =   "Word popularity in 2016 report against previous years",
+           subtitle = "Words above and to the left of the dotted line are more common in 2016 than previous years.")
+
+```
+
+Focus on the hot words.  Show these  in different colour based on category and  label these only.
+
+```{r}
+comp16_short <-  proportion_comparison16 %>% filter(year %in% c("2010", "2012", "2014"))
+comp16_short_cold <-  comp16_short %>%  filter(category == "none")
+comp16_short_hot <-  comp16_short %>%  filter(category != "none")
+
+p <- brewer.pal(4, "Dark2") 
+legend_colours <- c(climate = p[1], conduct = p[2], diversity = p[3], risk = p[4], none = "grey80")
+legend_order <- c("climate", "conduct", "diversity", "risk", "none")
+ggplot(comp16_short, aes(x = proportion, y = `2016`, color = category)) +
+  geom_abline(color = "gray40", lty = 2) + 
+  # show the cold words as a mainly transparent jittered background
+  geom_jitter(data = comp16_short_cold, alpha = 0.3, size = 2.5, width = 0.3, height = 0.3) +
+  # show the hot words exactly on location (no jitter) in the category colour
+  geom_text(data = comp16_short_hot, aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+  # show the hot word labels
+  geom_point(data = comp16_short_hot, alpha = 0.8) +
+  scale_x_log10(labels = percent) +
+  scale_y_log10(labels = percent) +
+  scale_color_manual(values = legend_colours, breaks = legend_order)  +
+  #scale_color_gradient(limits = c(0,0.001), low = "darkslategray4", high = "gray75") +
+  facet_wrap(~year, ncol = 3) +
+  labs(y = "2016", x = NULL) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  ggtitle(label =   "Frequency of hot words in 2016 vs previous year's reports",
+          subtitle = "Note that the choice of hot words is subjective and reflects the analyst's view.")
+
+```

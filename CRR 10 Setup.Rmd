@@ -1,0 +1,112 @@
+## CRR 10
+ 
+## Introduction
+
+The purpose is to analyse  several previous annual Corporate Reponsibility Reports (CRRs) of a large bank using text mining to understand if these reflect changes in  emphasis or importance of topics to the firm over the period.
+
+I owe a debt of gratitude to the wonderful
+[Text Mining With R book](http://tidytextmining.com/index.html) by Julia Silge and David Robinson.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+packages <- c("tidytext", "pdftools", "tidyr", "forcats", "ggplot2", "dplyr", "scales", "stringr", "wordcloud", "ggthemes", "readxl", "readr", "purrr", "vwr", "RColorBrewer", "ggraph", "igraph", "plotrix")
+packages_to_install <- setdiff(packages, rownames(installed.packages()))
+
+if (length(packages_to_install) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())), dependencies = TRUE)  
+}
+
+library(tidytext)
+library(pdftools)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(scales)
+library(stringr)
+library(wordcloud)
+library(ggthemes)
+library(readxl)
+library(readr)
+library(purrr)
+library(vwr) # contains a dictionary of english words
+library(RColorBrewer)
+library(igraph)
+library(ggraph)
+library(plotrix)
+library(rebus)
+```
+
+
+Load a list of _our_ words of interest (business sentiment / topic analysis)
+```{r}
+hot_list <-  read_excel("CRR Custom Words.xlsx", sheet = "hot_words")
+hot_words <-
+  hot_list %>% 
+  gather(key = "category", value = "word") %>% 
+  filter(!is.na(word))
+
+hot_words
+```
+
+Stop words are very common words of no interest in text analysis
+Load a few custom stop words and combine with a standard list of stop words.
+```{r}
+crr_stop_words <-  
+  read_excel("CRR Custom Words.xlsx", sheet = "stop_words") %>% 
+  select(word = stop_words) %>% 
+  mutate(lexicon = "CRR")
+
+crr_stop_words
+```
+
+```{r}
+all_stop_words <- bind_rows(stop_words, crr_stop_words)
+
+all_stop_words
+
+```
+
+Parse the PDF CRR reports into pages of text.
+Split those pages into single words.
+Lowercase words and do some cleaning to remove some PDF artefacts
+Remove all stop words
+
+```{r}
+parse_crr_pdf <- function(year) {
+# Returns a data frame with 3 columns
+# - year of the CRR report 
+# - pagenumber - of the page of the CRR report
+# - text of that page
+# parse_crr_pdf('2016')
+  
+    filename = paste0("PDFs/csg-crr-", year, "-en.pdf")
+  
+    data_frame(
+      year = year,  
+      page = pdf_text(filename))  %>% 
+      mutate(pagenumber = row_number(year))
+}
+
+parsed_pages <- bind_rows(
+  parse_crr_pdf('2010'),
+  parse_crr_pdf('2011'),
+  parse_crr_pdf('2012'),
+  parse_crr_pdf('2013'),
+  parse_crr_pdf('2014'),
+  parse_crr_pdf('2015'),
+  parse_crr_pdf('2016')
+)
+```
+
+```{r}
+useful_words <-
+  parsed_pages  %>% 
+  unnest_tokens(word, page, to_lower = TRUE) %>% 
+  mutate(word = str_extract(word, "[A-Za-z']+")) %>%  
+  # clean up of any PDF chars not removed by previous operations
+  filter(!is.na(word)) %>% # previous operation may have created NAs if all chars were not letters
+  anti_join(all_stop_words, by = "word")
+
+useful_words
+```
+

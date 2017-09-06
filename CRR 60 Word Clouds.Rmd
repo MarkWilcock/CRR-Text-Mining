@@ -1,0 +1,64 @@
+## CRR 60 Word Clouds
+
+# Commonality and comparison wordclouds
+
+```{r}
+word_count <- 
+  useful_words %>%  # df of all words, excl. stop words, across all documents
+  count(year, word)
+
+# convert the data_frame into  a TDM and then into a matrix (required by the word cloud)
+tdm <-  
+  word_count %>% 
+  cast_tdm(term = word, document = year, value = n)
+m <-  as.matrix(tdm)
+head(m)
+```
+
+Create a basic word cloud based on all annual reports.
+
+```{r fig.width = 15, fig.height = 15, warning=FALSE}
+max_words <- 200
+
+totals <- rowSums(m)
+wordcloud(rownames(m), totals, max.words = max_words)
+```
+
+Create commonality word cloud based on all reports.
+
+```{r fig.width = 15, fig.height = 15, warning=FALSE}
+commonality.cloud(m, 
+                 color = "blue",
+                 scale = c(1,10), 
+                 title.size = 2, 
+                 max.words = max_words)
+
+```
+
+Create a comparison word cloud based on all reports.
+
+```{r fig.width = 15, fig.height = 15, warning=FALSE}
+comparison.cloud(m, 
+                 colors = brewer.pal(7, "Dark2"), 
+                 scale = c(1,7), 
+                 title.size = 3, 
+                 max.words = max_words)
+```
+
+Create comparison word clouds based on just two reports (the earliest and latest).
+
+```{r fig.width = 15, fig.height = 15, warning=FALSE}
+tdm_2010_2016 <-  
+  word_count %>% 
+  filter(year %in% c(2010, 2016)) %>% 
+  cast_tdm(term = word, document = year, value = n)
+m2 <-  as.matrix(tdm_2010_2016)
+head(m2)
+
+comparison.cloud(m2, 
+                 colors = brewer.pal(3, "Dark2")[1:2], 
+                 scale = c(1,7), 
+                 title.size = 2, 
+                 max.words = max_words)
+```
+

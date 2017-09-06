@@ -1,0 +1,66 @@
+## CRR 15 Word Counts
+
+
+Find the top 20 words across all reports  
+
+```{r}
+top_words <- useful_words %>% 
+  count(word, sort = TRUE) %>% 
+  mutate(ranking = min_rank(desc(n))) %>%
+  ungroup() %>%
+  filter(ranking <= 20) 
+
+top_words
+
+```
+
+And plot these as a bar chart
+```{r}
+ggplot(top_words, aes(x = fct_reorder(word, n), y = n)) + 
+  geom_col() +
+  coord_flip() +
+  theme_light() +
+  ggtitle(label = "Top N Words Overall", 
+          subtitle = "Lots of strong and stable words") +
+  xlab("Word") +
+  ylab("Number of occurrences over all reports")
+
+```
+
+
+
+Look at the count of these top words by year.
+```{r}
+top_words_by_year <- 
+  useful_words %>% 
+  count(year, word, sort = TRUE) %>% 
+  mutate(ranking = min_rank(desc(n))) %>%
+  ungroup() %>%
+  semi_join(top_words, by = "word")
+
+top_words_by_year
+
+```
+Plot these top_words_by_year.
+```{r}
+year_colours <- brewer.pal(7, "Dark2")
+# Plot facted bar charts showing the frequency of the most common words across the years
+ggplot(top_words_by_year, aes(x = year, y = n, fill = year)) + 
+  geom_col() +
+  facet_wrap(~word, ncol = 5) +
+  ggtitle("Top 20 Most Popular Words Over The Years", 
+          "Shows which words increase or reduce in popularity (and therefore importance to the firm?) over the 4 years") +
+  scale_y_continuous("Number Of Words") +
+  scale_x_discrete("Year of report") +
+  #scale_fill_tableau(palette = "tableau10medium") +
+  scale_fill_manual(values = year_colours) +
+  #scale_fill_economist()
+#scale_fill_manual(values = c("red", "yellow", "green", "blue")) +
+  theme_light() +
+  theme(legend.position = "right")  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) # year labels rotated to fit
+
+```
+
+
+

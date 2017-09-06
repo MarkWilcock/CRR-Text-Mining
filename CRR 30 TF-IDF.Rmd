@@ -1,0 +1,71 @@
+## CRR 30 TF-IDF
+
+# What are the _specific_ words and topics in each report (TF-IDF analysis)
+
+Data cleaning is always necessary: An unfortunate imperfection in the  process of parsing these PDF into words is that it splits some words into fragments.  The code below recognises and removes these fragments, otherwise the TF-IDF algorithm would see these as the most specific words.  The cleaning is not perfect.
+
+```{r message = FALSE, warning = FALSE}
+# dict_words contains 63K english words + a few specific stop words
+dict_words <- 
+  data_frame(word = english.words) %>% 
+  bind_rows(select(crr_stop_words, word))
+
+#unusual_words are those words not found the disctionary above
+unusual_words <- useful_words %>% anti_join(dict_words) %>%  select(word) %>% unique
+
+# some of these arise since the PDF parsing splits words
+# It is best to ignore these broken words
+# so tag these words if they are a fragment of the word in the dictionary 
+
+# returns TRUE if possible_word_part is a fragment of any of the words in dict-words
+is_part_of_word <- function(possible_word_part) {
+  str_detect(dict_words, possible_word_part)
+}
+
+# Next step takes about 15 minutes so have cached the word_fragments in a  file
+# is_word_fragment <- map_lgl(unusual_words$word, is_part_of_word)
+# 
+# word_fragments <-
+#   data_frame(word = unusual_words$word, is_word_fragment) %>%
+#   filter(is_word_fragment == TRUE) %>%
+#   select(-is_word_fragment)
+# 
+# write_csv(x = word_fragments,path = "CSVs/word_fragments.csv")
+
+word_fragments <-  read_csv("CSVs/word_fragments.csv")
+
+```
+
+Plot the most specific words in each year's report.
+
+```{r fig.width = 10, fig.height = 12}
+proportions_tdf <-
+  useful_words %>%
+  count(year, word) %>%
+  mutate(proportion = n / sum(n))  %>% 
+  ungroup() %>% 
+  select(-proportion) %>% 
+  anti_join(word_fragments) %>%
+  bind_tf_idf(word, year, n) %>% 
+  group_by(year) %>% 
+  arrange(desc(tf_idf)) %>%
+  top_n(20, tf_idf) %>% 
+  ungroup() %>% 
+  mutate(pasted_word_group = fct_reorder(paste(word, year, sep = "__"), tf_idf))
+
+ggplot(proportions_tdf, aes(x = pasted_word_group, y = tf_idf, fill = year)) +
+    geom_col() +
+    scale_y_continuous("TF - IDF", labels = NULL) +
+    scale_fill_manual(values = brewer.pal(7, "Dark2")) +
+    facet_wrap(~ year, ncol = 4, scales = "free") +
+    coord_flip() +
+    scale_x_discrete(labels = function(x) str_replace(x, "__.*", "")) + 
+    theme_light() +
+    theme(legend.position = "bottom") +
+    ggtitle(label =   "Most frequent words appearing in only one or a few reports only",
+          subtitle = "Uses the TF - IDF algorithm.")
+
+```
+
+There was concern about platic bags in 2010, mindstorms was the buzzword of 2011, engagement with philanthropists was the issue with 2013, 2014 was a bad year of regret, restrive and disease, 2015 was about Sustainable Development Goals (sgds) and 2016 was dominated by a referendum of a small unimportant country.
+

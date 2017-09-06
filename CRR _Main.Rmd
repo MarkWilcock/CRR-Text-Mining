@@ -1,0 +1,42 @@
+---
+title: "CRR _Main"
+author: "Mark Wilcock"
+date: "25 August 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter: Setup
+```{r child = 'CRR 10 Setup.Rmd'}
+```
+
+# Chapter: Frequency Analysis
+```{r child = 'CRR 20 Frequency Analysis.Rmd'}
+```
+
+# Chapter: TF-IDF
+```{r child = 'CRR 30 TF-IDF.Rmd'}
+```
+
+# Chapter: Acronyms
+```{r child = 'CRR 40 Acronyms.Rmd'}
+```
+
+# Chapter: Bigrams
+```{r child = 'CRR 50 Bigrams.Rmd'}
+```
+
+# Chapter: Word Clouds
+```{r child = 'CRR 60 Word Clouds.Rmd'}
+```
+
+# Pyramid Charts 
+```{r child = 'CRR 70 Pyramid Charts.Rmd'}
+```
+
+
+
+
