@@ -1,6 +1,3 @@
-## CRR 15 Word Counts
-
-
 Find the top 20 words across all reports  
 
 ```{r}

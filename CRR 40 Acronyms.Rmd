@@ -1,5 +1,3 @@
-## CRR 40 Acronyms
-
 ## Bank Buzzword Bingo 
 
 Our test for acronyms is those words that have two or more consecutive letters in capitals.

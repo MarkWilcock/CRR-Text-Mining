@@ -1,5 +1,3 @@
-## CRR 30 TF-IDF
-
 # What are the _specific_ words and topics in each report (TF-IDF analysis)
 
 Data cleaning is always necessary: An unfortunate imperfection in the  process of parsing these PDF into words is that it splits some words into fragments.  The code below recognises and removes these fragments, otherwise the TF-IDF algorithm would see these as the most specific words.  The cleaning is not perfect.

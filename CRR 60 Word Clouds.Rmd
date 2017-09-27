@@ -1,6 +1,4 @@
-## CRR 60 Word Clouds
-
-# Commonality and comparison wordclouds
+## Commonality and comparison wordclouds
 
 ```{r}
 word_count <- 

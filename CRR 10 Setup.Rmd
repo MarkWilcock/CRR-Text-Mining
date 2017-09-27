@@ -1,5 +1,3 @@
-## CRR 10
- 
 ## Introduction
 
 The purpose is to analyse  several previous annual Corporate Reponsibility Reports (CRRs) of a large bank using text mining to understand if these reflect changes in  emphasis or importance of topics to the firm over the period.

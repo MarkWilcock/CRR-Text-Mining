@@ -1,5 +1,3 @@
-## CRR 20 Frequency Analysis
-
 ## Basic Frequency Analysis
 
 The analysis above was a bit dodgy since it dd not take into account the (slightly) different lengths of the documents.

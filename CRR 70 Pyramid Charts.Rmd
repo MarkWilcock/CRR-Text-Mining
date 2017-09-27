@@ -1,6 +1,4 @@
-## CRR 70 Pyramid Charts
-
-# Polarised tag plots (pyramid plots).
+## Polarised tag plots (pyramid plots).
 
 ```{r}
 # Prepare the data for the pyramid plot

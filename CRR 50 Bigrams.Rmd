@@ -1,6 +1,4 @@
-## CRR 50 Bigrams
-
-# Bigram Analysis
+## Bigram Analysis
 
 
 Rather than the words, let get the bigrams (consecutive two words) from the parsed pages.

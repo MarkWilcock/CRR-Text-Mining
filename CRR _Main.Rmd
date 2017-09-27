@@ -1,7 +1,7 @@
 ---
-title: "CRR _Main"
+title: "Text Analysis Of Corporate Responibility Reports"
 author: "Mark Wilcock"
-date: "25 August 2017"
+date: "27 September 2017"
 output: html_document
 ---
 
@@ -9,15 +9,19 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Chapter: Setup
+# Setup
 ```{r child = 'CRR 10 Setup.Rmd'}
 ```
 
-# Chapter: Frequency Analysis
+# Word Counts
+```{r child = 'CRR 15 Word Counts.Rmd'}
+```
+
+# Frequency Analysis
 ```{r child = 'CRR 20 Frequency Analysis.Rmd'}
 ```
 
-# Chapter: TF-IDF
+# TF-IDF
 ```{r child = 'CRR 30 TF-IDF.Rmd'}
 ```
 
@@ -25,14 +29,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r child = 'CRR 40 Acronyms.Rmd'}
 ```
 
-# Chapter: Bigrams
+# Bigrams
 ```{r child = 'CRR 50 Bigrams.Rmd'}
 ```
 
-# Chapter: Word Clouds
+# Word Clouds
 ```{r child = 'CRR 60 Word Clouds.Rmd'}
 ```
-
 # Pyramid Charts 
 ```{r child = 'CRR 70 Pyramid Charts.Rmd'}
 ```
